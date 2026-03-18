@@ -12,7 +12,10 @@ config();
 
 const app = express();
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",
+    "https://evolveiq-todos-backend-production.up.railway.app",
+  ],
   methods: ["GET", "POST", "PATCH", "DELETE"],
 }));
 app.use(express.json());

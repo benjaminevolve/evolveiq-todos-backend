@@ -11,13 +11,7 @@ import { config } from "dotenv";
 config();
 
 const app = express();
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://evolveiq-todos-backend-production.up.railway.app",
-  ],
-  methods: ["GET", "POST", "PATCH", "DELETE"],
-}));
+app.use(cors());
 app.use(express.json());
 
 // ─── SUPABASE CLIENT ──────────────────────────────────────────────────────────
@@ -200,11 +194,19 @@ app.delete("/api/tasks/:id", async (req, res) => {
 // ─── WEBHOOK ROUTE (receives Fathom call transcripts) ────────────────────────
 app.post("/api/webhook/fathom", async (req, res) => {
   try {
-    const { transcript, summary, client } = req.body;
-    if (!transcript) return res.status(400).json({ error: "transcript is required" });
+    console.log("📦 Fathom payload:", JSON.stringify(req.body).substring(0, 1000));
+
+    const rawBody = req.body;
+    const transcript = rawBody.transcript || rawBody.text || rawBody.content || 
+                       (rawBody.meeting && rawBody.meeting.transcript) ||
+                       JSON.stringify(rawBody);
+    const client = rawBody.client || rawBody.contact || 
+                   (rawBody.meeting && rawBody.meeting.title) || "Unknown";
 
     console.log(`\n📞 New call received from client: ${client}`);
-    const cleanedTranscript = transcript.replace(/\s+/g, " ").trim();
+    const cleanedTranscript = typeof transcript === "string"
+      ? transcript.replace(/\s+/g, " ").trim()
+      : JSON.stringify(transcript);
 
     console.log("🤖 Sending to Claude for task extraction...");
     const userPrompt = `Extract action items from this meeting transcript.
